@@ -5,6 +5,7 @@ import FlexyRow from '@c/FlexyRow'
 import { Title } from '@c/Title'
 import { getShowBySlug } from '@l/graphcms'
 import { formatUSD, formatDate } from '@l/utils'
+import {useRouter} from 'next/router';
 
 const Markdown = styled(ReactMarkdown)`
   img {
@@ -18,6 +19,12 @@ const ArtistName = styled.h2`
   text-align: center;
 `
 
+const Box = styled.div`
+  display: grid;
+  justify-content: center;
+  align-items: center;
+`
+
 const ArtistPhoto = styled.div`
   background-image: url(${(p) => p.imageUrl});
   background-repeat: no-repeat;
@@ -26,9 +33,16 @@ const ArtistPhoto = styled.div`
   height: 200px;
   border-radius: 100px;
   border: 4px solid currentColor;
-  margin: 0 auto;
+  margin: 20px auto;
 `
+const Button = styled.button`
+  background: transparent;
+  padding: 10px 30px;
+  color: white;
+  border-radius: 10px;
+  border-color: white;
 
+`
 const Portrait = ({ images = [] }) => {
   if (images.length > 0) {
     const img = images[0]
@@ -40,7 +54,9 @@ const Portrait = ({ images = [] }) => {
 }
 
 export default function Shows({ show }) {
-  return (
+    const router = useRouter()
+
+    return (
     <Layout title={`${show.title} / next-graphcms-shows`} maxWidth="900px" padding="0 2em">
       <Title>{show.title}</Title>
 
@@ -48,24 +64,17 @@ export default function Shows({ show }) {
         <span>Price: {formatUSD(show.ticketPrice)}</span>
         <span>{formatDate(show.scheduledStartTime)}</span>
       </FlexyRow>
-
       <Markdown source={show.description} />
 
       {show.artists.map(artist => (
-        <div key={artist.id}>
-          <ArtistName>{artist.fullName}</ArtistName>
+          <Box key={artist.id}>
+              <div>
+                  <ArtistName>{artist.fullName}</ArtistName>
+                  <Portrait images={artist.images} />
+              </div>
+              <Button onClick={()=> router.push(`/artist/${artist.slug}`)}>Show more</Button>
+          </Box>
 
-          <Portrait images={artist.images} />
-
-          <FlexyRow justify="flex-start">
-            <a href={artist.webUrl} target="_blank">Website</a>
-            <a href={artist.facebookUrl} target="_blank">Facebook</a>
-            <a href={artist.instagramUrl} target="_blank">Instagram</a>
-            <a href={artist.youTubeUrl} target="_blank">YouTube</a>
-          </FlexyRow>
-
-          <Markdown source={artist.bio} />
-        </div>
       ))}
     </Layout>
   )
@@ -73,8 +82,12 @@ export default function Shows({ show }) {
 
 export async function getServerSideProps({ params }) {
   const { slug } = params
-  const show = (await getShowBySlug(slug))
-
+    const show = (await getShowBySlug(slug))
+    if (!show) {
+        return {
+            notFound: true,
+        };
+    }
   return {
     props: { show },
   }
